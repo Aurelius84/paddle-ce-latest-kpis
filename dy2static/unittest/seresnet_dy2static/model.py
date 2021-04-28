@@ -384,6 +384,7 @@ def train(args, to_static):
         capacity=5, iterable=True)
     data_loader.set_sample_list_generator(train_reader)
 
+    place = paddle.CUDAPlace(0)
     # start training
     for epoch_id in range(args.pass_num):
         total_loss = 0.0
@@ -396,6 +397,10 @@ def train(args, to_static):
             start_time = time.time()
 
             img, label = data
+            
+            img = paddle.to_tensor(img, place=place)
+            lable = paddle.to_tensor(label, place=place)
+
             pred, avg_loss, acc_top1, acc_top5 = se_resnext(img, label)
 
             # backward
@@ -416,11 +421,13 @@ def train(args, to_static):
 
             # print log
             if step_id % args.log_internal == 0:
-                print( "ToStatic = {},\tPass = {},\tIter = {},\tLoss = {:.3f},\tAcc1 = {:.3f},\tAcc5 = {:.3f},\tElapse(ms) = {:.3f}".format
+                print( "ToStatic = {},\tPass = {},\tIter = {},\tLoss = {:.3f},\tAcc1 = {:.3f},\tAcc5 = {:.3f},\tElapse(ms) = {:.3f}\n".format
                     ( to_static, epoch_id, step_id, total_loss / total_sample, \
                         total_acc1 / total_sample, total_acc5 / total_sample, cost_time / args.log_internal))
                 # reset cost_time
                 cost_time = 0.
+            if step_id == 300:
+                break
 
 
 def run_benchmark(args):

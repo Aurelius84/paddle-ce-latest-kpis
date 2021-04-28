@@ -168,6 +168,7 @@ def train(args, to_static=False):
         shuffle=False,
         drop_last=True)
 
+    place = paddle.CUDAPlace(0)
     # start training
     for pass_id in range(args.pass_num):
         # core indicators
@@ -179,6 +180,9 @@ def train(args, to_static=False):
 
             img = data[0].unsqueeze(1)
             label = data[1]
+            img = paddle.to_tensor(img, place=place)
+            label = paddle.to_tensor(label, place=place)
+            
             prediction, acc, avg_loss = mnist(img, label)
 
             # backward
@@ -200,7 +204,7 @@ def train(args, to_static=False):
 
             if batch_id % 10 == 0:
                 print(
-                    "ToStatic = %s, Pass = %d, Iter = %d, Loss = %f, Accuracy = %f, Elapse(ms) = %f"
+                    "ToStatic = %s, Pass = %d, Iter = %d, Loss = %f, Accuracy = %f, Elapse(ms) = %f\n"
                     % (to_static, pass_id, batch_id, avg_loss, acc, cost_t))
         # print log from each pass_id
         print(

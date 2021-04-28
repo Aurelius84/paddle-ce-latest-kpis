@@ -383,7 +383,7 @@ class MobileNetV2(fluid.dygraph.Layer):
             self._out_c,
             class_dim,
             param_attr=tmp_param,
-            bias_attr=ParamAttr(name="fc10_offset"))
+            bias_attr=ParamAttr(name=self.full_name() + "fc10_offset"))
 
     @to_static
     def forward(self, inputs):
@@ -493,13 +493,14 @@ def train(args, to_static):
 
     if "v1" in args.model_type:
         net = MobileNetV1(class_dim=args.class_num, scale=1.0)
-    elif "v2" in args.model:
+    elif "v2" in args.model_type:
         net = MobileNetV2(class_dim=args.class_num, scale=1.0)
     else:
         print("wrong model name, please try model = v1 or v2")
         exit()
 
     optimizer = create_optimizer(args=args, parameter_list=net.parameters())
+    place = paddle.CUDAPlace(0)
 
     # load flowers data
     train_reader = paddle.batch(
@@ -512,7 +513,6 @@ def train(args, to_static):
 
     # 4. train loop
     net.train()
-    args.pass_num = 1
     for pass_id in range(args.pass_num):
         total_loss = 0.0
         total_acc1 = 0.0
@@ -523,6 +523,9 @@ def train(args, to_static):
         for batch_id, data in enumerate(data_loader()):
             start_time = time.time()
             img, label = data
+            img = paddle.to_tensor(img, place=place)
+            label = paddle.to_tensor(label, place=place)
+
             out = net(img)
 
             softmax_out = fluid.layers.softmax(out, use_cudnn=False)

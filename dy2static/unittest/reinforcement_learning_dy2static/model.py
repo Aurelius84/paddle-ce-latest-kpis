@@ -138,14 +138,14 @@ def train(args, to_static):
         return idx, np.array([mask]).astype("float32")
 
     def select_action(state):
-        state = to_variable(state)
+        state = paddle.to_tensor(state, place=paddle.CUDAPlace(0))
         state.stop_gradient = True
         loss_probs = policy(state)
 
         probs = loss_probs.numpy()
 
         action, _mask = sample_action(probs[0])
-        mask = to_variable(_mask)
+        mask = paddle.to_tensor(_mask, place=paddle.CUDAPlace(0))
         mask.stop_gradient = True
 
         loss_probs = fluid.layers.log(loss_probs)
@@ -221,7 +221,7 @@ def train(args, to_static):
         running_reward = 0.05 * ep_reward + (1 - 0.05) * running_reward
         if i_episode % args.log_interval == 0:
             print(
-                'ToStatic = {},\tPass = {},\tLast reward = {:.2f},\tAverage reward = {:.2f},\tloss_probs = {:.6f},\tElapse(ms) = {:.3f}'.
+                'ToStatic = {},\tPass = {},\tLast reward = {:.2f},\tAverage reward = {:.2f},\tloss_probs = {:.6f},\tElapse(ms) = {:.3f}\n'.
                 format(to_static, i_episode, ep_reward, running_reward,
                        loss.numpy()[0], np.mean(avg_cost_time)))
 

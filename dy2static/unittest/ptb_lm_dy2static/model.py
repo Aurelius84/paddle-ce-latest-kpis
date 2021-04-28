@@ -252,6 +252,8 @@ def train(args, to_static=False):
     ptb_data = getdata.get_ptb_data(args.batch_size, num_steps)
     print("finished load data")
 
+    place = paddle.CUDAPlace(0)
+
     for pass_id in range(args.pass_num):
         # core indicators
         cost_time = []
@@ -262,9 +264,9 @@ def train(args, to_static=False):
             (num_layers, args.batch_size, hidden_size), dtype='float32')
 
         init_hidden = paddle.to_tensor(
-            data=init_hidden_data, dtype=None, place=None, stop_gradient=True)
+            data=init_hidden_data, place=place, stop_gradient=True)
         init_cell = paddle.to_tensor(
-            data=init_cell_data, dtype=None, place=None, stop_gradient=True)
+            data=init_cell_data, place=place, stop_gradient=True)
         for batch_id, data in enumerate(ptb_data):
             batch_start = time.time()
             x_data = data[0]
@@ -275,9 +277,9 @@ def train(args, to_static=False):
             y_data = y_data.reshape((-1, num_steps, 1))
 
             x = paddle.to_tensor(
-                data=x_data, dtype=None, place=None, stop_gradient=True)
+                data=x_data, place=place, stop_gradient=True)
             y = paddle.to_tensor(
-                data=y_data, dtype=None, place=None, stop_gradient=True)
+                data=y_data, place=place, stop_gradient=True)
 
             dy_loss, last_hidden, last_cell = ptb(x, y, init_hidden, init_cell)
             out_loss = dy_loss.numpy()
@@ -292,7 +294,7 @@ def train(args, to_static=False):
 
             if batch_id % PRINT_STEP == 0:
                 print(
-                    'ToStatic = %s, pass = %d, Iter %d, Loss = %0.3f, Elapse(ms) = %f'
+                    'ToStatic = %s, pass = %d, Iter %d, Loss = %0.3f, Elapse(ms) = %f\n'
                     % (to_static, pass_id, batch_id, out_loss, cost_t))
         # print log from each pass_id
         print('to_static = %s, pass = %d, Loss = %0.3f, Elapse(ms) = %f' %

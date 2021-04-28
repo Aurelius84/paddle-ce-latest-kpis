@@ -264,6 +264,7 @@ def train(args, to_static):
     resnet = ResNet()
     optimizer = optimizer_setting(args, parameter_list=resnet.parameters())
 
+    place = paddle.CUDAPlace(0)
     # start training
     for pass_id in range(args.pass_num):
         total_loss = 0.0
@@ -275,6 +276,8 @@ def train(args, to_static):
         for batch_id, data in enumerate(data_loader()):
             start_time = time.time()
             img, label = data
+            img = paddle.to_tensor(img, place=place)
+            lable = paddle.to_tensor(label, place=place)
 
             pred = resnet(img)
             loss = paddle.nn.functional.cross_entropy(input=pred, label=label)
@@ -298,11 +301,13 @@ def train(args, to_static):
             total_sample += 1
 
             if batch_id % args.log_internal == 0:
-                print( "ToStatic = {},\tPass = {},\tIter = {},\tLoss = {:.3f},\tAcc1 = {:.3f},\tAcc5 = {:.3f},\tElapse(ms) = {:.3f}".format
+                print( "ToStatic = {},\tPass = {},\tIter = {},\tLoss = {:.3f},\tAcc1 = {:.3f},\tAcc5 = {:.3f},\tElapse(ms) = {:.3f}\n".format
                     ( to_static, pass_id, batch_id, total_loss.numpy()[0] / total_sample, \
                         total_acc1.numpy()[0] / total_sample, total_acc5.numpy()[0] / total_sample, cost_time / args.log_internal))
                 # reset cost_time
                 cost_time = 0.
+            if batch_id == 300:
+                break
 
     return total_loss.numpy()
 
@@ -325,7 +330,7 @@ def run_benchmark(args):
     train(args, to_static=True)
 
     # save inference model with class_dim=1000
-    export_inference_model()
+    # export_inference_model()
 
 
 if __name__ == '__main__':
