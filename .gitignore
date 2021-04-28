@@ -7,3 +7,4 @@ __pycache__
 .vscode/*
 *.hdf5
 *bak/*
+*.whl

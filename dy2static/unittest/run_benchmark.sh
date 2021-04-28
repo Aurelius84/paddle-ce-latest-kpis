@@ -11,6 +11,8 @@ run_model_train()
     cd ..
 }
 
+export CUDA_VISIBLE_DEVICES="7"
+
 # mnist
 run_model_train mnist_dy2static train.sh
 # mobilenet v1/v2
