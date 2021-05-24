@@ -20,7 +20,6 @@ import numpy as np
 import paddle
 import paddle.fluid as fluid
 from paddle.fluid.dygraph.nn import BatchNorm, Conv2D, Linear, Pool2D
-from paddle.jit import to_static
 from paddle.fluid.dygraph import ProgramTranslator
 # Note: Set True to eliminate randomness.
 #     1. For one operation, cuDNN has several algorithms,
@@ -320,7 +319,6 @@ class SeResNeXt(fluid.dygraph.Layer):
             param_attr=fluid.param_attr.ParamAttr(
                 initializer=fluid.initializer.Uniform(-stdv, stdv)))
 
-    @to_static
     def forward(self, inputs, label):
         if self.layers == 50 or self.layers == 101:
             y = self.conv0(inputs)
@@ -373,6 +371,8 @@ def train(args, to_static):
 
     # create model
     se_resnext = SeResNeXt()
+    if to_static:
+        se_resnext = paddle.jit.to_static(se_resnext)
     optimizer = optimizer_setting(args, se_resnext.parameters())
 
     # load flowers data
@@ -399,7 +399,7 @@ def train(args, to_static):
             img, label = data
             
             img = paddle.to_tensor(img, place=place)
-            lable = paddle.to_tensor(label, place=place)
+            label = paddle.to_tensor(label, place=place)
 
             pred, avg_loss, acc_top1, acc_top5 = se_resnext(img, label)
 

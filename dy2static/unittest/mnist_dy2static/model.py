@@ -98,8 +98,8 @@ class MNIST(fluid.dygraph.Layer):
                     loc=0.0, scale=scale)),
             act="softmax")
 
-    @paddle.jit.to_static
     def forward(self, inputs, label=None):
+        inputs = paddle.unsqueeze(inputs, 1)
         x = self.inference(inputs)
         if label is not None:
             acc = fluid.layers.accuracy(input=x, label=label)
@@ -126,6 +126,11 @@ def parse_args():
         '--batch_size', type=int, default=128, help='The minibatch size.')
     parser.add_argument(
         '--pass_num', type=int, default=5, help='The number of passes.')
+    parser.add_argument(
+        '--log_internal',
+        type=int,
+        default=10,
+        help='The internal step of log.')
     parser.add_argument(
         '--device',
         type=str,
@@ -157,6 +162,8 @@ def train(args, to_static=False):
 
     # create model
     mnist = MNIST()
+    if to_static:
+        mnist = paddle.jit.to_static(mnist)
     adam = AdamOptimizer(
         learning_rate=0.001, parameter_list=mnist.parameters())
 
@@ -178,7 +185,7 @@ def train(args, to_static=False):
         for batch_id, data in enumerate(train_loader()):
             batch_start = time()
 
-            img = data[0].unsqueeze(1)
+            img = data[0]
             label = data[1]
             img = paddle.to_tensor(img, place=place)
             label = paddle.to_tensor(label, place=place)
@@ -202,10 +209,10 @@ def train(args, to_static=False):
             loss.append(avg_loss)
             cost_time.append(cost_t)
 
-            if batch_id % 10 == 0:
+            if batch_id % args.log_internal == 0:
                 print(
                     "ToStatic = %s, Pass = %d, Iter = %d, Loss = %f, Accuracy = %f, Elapse(ms) = %f\n"
-                    % (to_static, pass_id, batch_id, avg_loss, acc, cost_t))
+                    % (to_static, pass_id, batch_id, avg_loss, acc, np.mean(cost_time)))
         # print log from each pass_id
         print(
             "to_static=%s, pass=%d, train_avg_acc=%f, train_avg_loss=%f, elapse(ms)=%f"

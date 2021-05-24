@@ -18,31 +18,49 @@ def parse_elapse_time(log_file):
     
     assert len(dy_time) == len(st_time)
     # drop warmup data
-    dy_time = dy_time[5:-2]
-    st_time = st_time[5:-2]
+    dy_time = dy_time[2:-2]
+    st_time = st_time[2:-2]
 
     return mean(dy_time), mean(st_time)
+
+def parse_baseline_time(log_file):
+    baseline_time = []
+    with open(log_file,'r') as f:
+        for line in f:
+            content = line.strip('\n')
+            if 'Baseline' not in content: continue
+            time = content.split(',')[-1]
+            assert 'ms' in time
+            time = float(time.split('=')[-1].strip())
+            baseline_time.append(time)
+    # drop warmup data
+    baseline_time = baseline_time[2:-2]
+
+    return mean(baseline_time)
 
 def mean(nums):
     return sum(nums) / len(nums)
 
 
-def to_mark_down(file, dy_time, st_time, model_name, with_header=True):
+def to_mark_down(file, dy_time, st_time, baseline_time, model_name, with_header=True):
     header = textwrap.dedent("""
-    | 训练耗时 (ms/batch) |  动态图  | to_static(PE) | 提速 |
-    |:------:|:------:|:------:|:------:|
+    | 训练耗时 (ms/batch) | 静态图 |  动态图  |to_static(PE) | 提速(vs.动态图) | 提速(vs.静态图) | 
+    |:------:|:------:|:------:|:------:|:------:|:------:|
     """)
 
     content = textwrap.dedent("""
-    | {model}  |  {dy}  |   {st} | {speedup}% |
+    | {model}  | {baseline} |{dy}  |   {st} | {speedup}% | {gap}% | 
     """)
 
     speed_up = (dy_time - st_time) / st_time * 100
+    gap = (baseline_time - st_time) / st_time * 100
     content = content.format(
             model=model_name,
+            baseline="%.2f" % baseline_time, 
             dy="%.2f" % dy_time, 
             st="%.2f" % st_time,
-            speedup= "%.2f" % speed_up
+            speedup= "%.2f" % speed_up,
+            gap="%.2f" % gap,
             ).lstrip('\n')
 
     with open(file, 'a') as f:
@@ -69,7 +87,7 @@ def get_log_files():
         # ('reinforcement_learning', './reinforcement_learning_dy2static/reinforcement_learning.log')
         ('mobilenet_v1', './mobile_net_dy2static/mobile_net_v1.log'),
         ('mobilenet_v2', './mobile_net_dy2static/mobile_net_v2.log'),
-        # # './sentiment_dy2static/sentiment.log',
+        # './sentiment_dy2static/sentiment.log',
         ('seresnet', './seresnet_dy2static/seresnet.log'),
         # ('yolov3', 'yolov3_dy2static/yolov3.log'),
     ]
@@ -84,5 +102,7 @@ if __name__ == '__main__':
     for (model_name, log_file) in get_log_files():
         print("start to deal {}".format(log_file))
         dy_time, st_time = parse_elapse_time(log_file)
-        to_mark_down(args.output, dy_time, st_time, model_name, with_header=with_header)
+        bl_log_file = log_file[:-4] + "_static_baseline.log"
+        baseline_time = parse_baseline_time(bl_log_file)
+        to_mark_down(args.output, dy_time, st_time, baseline_time, model_name, with_header=with_header)
         with_header = False

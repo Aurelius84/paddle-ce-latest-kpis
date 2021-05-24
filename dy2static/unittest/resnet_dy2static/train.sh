@@ -1,7 +1,13 @@
 #!/bin/bash
 
 model="resnet"
+bs=$1
+print_step=`expr 640 / $bs`
 
 log_path="./${model}.log"
 
-python model.py --device=GPU --batch_size=8 --pass_num=1 --log_internal=10 > $log_path 2>&1
+python model.py --device=GPU --batch_size=$bs --pass_num=1 --log_internal=$print_step > $log_path 2>&1
+wait
+
+log_path="./${model}_static_baseline.log"
+python static_baseline.py --device=GPU --batch_size=$bs --pass_num=1 --log_internal=$print_step > $log_path 2>&1

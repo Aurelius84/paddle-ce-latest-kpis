@@ -28,8 +28,6 @@ if paddle.is_compiled_with_cuda():
 
 program_translator = paddle.jit.ProgramTranslator()
 
-
-
 place = paddle.CUDAPlace(0) if paddle.is_compiled_with_cuda() \
     else paddle.CPUPlace()
 
@@ -216,7 +214,6 @@ class ResNet(paddle.nn.Layer):
             weight_attr=paddle.ParamAttr(
                 initializer=paddle.nn.initializer.Uniform(-stdv, stdv)))
 
-    @paddle.jit.to_static
     def forward(self, inputs):
         y = self.conv(inputs)
         y = self.pool2d_max(y)
@@ -262,6 +259,8 @@ def train(args, to_static):
 
     # create model
     resnet = ResNet()
+    if to_static:
+        resnet = paddle.jit.to_static(resnet)
     optimizer = optimizer_setting(args, parameter_list=resnet.parameters())
 
     place = paddle.CUDAPlace(0)

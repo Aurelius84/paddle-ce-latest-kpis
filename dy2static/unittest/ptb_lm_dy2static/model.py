@@ -25,7 +25,6 @@ from paddle.jit import ProgramTranslator
 
 import getdata
 
-PRINT_STEP = 20
 SEED = 2020
 
 
@@ -37,6 +36,11 @@ def parse_args():
         '--batch_size', type=int, default=128, help='The minibatch size.')
     parser.add_argument(
         '--pass_num', type=int, default=5, help='The number of passes.')
+    parser.add_argument(
+        '--log_internal',
+        type=int,
+        default=20,
+        help='The internal step of log.')
     parser.add_argument(
         '--device',
         type=str,
@@ -187,7 +191,6 @@ class PtbModel(paddle.nn.Layer):
     def build_once(self, input, label, init_hidden, init_cell):
         pass
 
-    @paddle.jit.to_static
     def forward(self, input, label, init_hidden, init_cell):
         init_h = paddle.reshape(
             init_hidden, shape=[self.num_layers, -1, self.hidden_size])
@@ -234,7 +237,7 @@ def train(args, to_static=False):
     # create model
     num_layers = 1
     hidden_size = 10
-    num_steps = 3
+    num_steps = 30
     init_scale = 0.1
     dropout = 0.0
     vocab_size = 10000
@@ -245,6 +248,8 @@ def train(args, to_static=False):
         num_steps=num_steps,
         init_scale=init_scale,
         dropout=dropout)
+    if to_static:
+        ptb = paddle.jit.to_static(ptb)
     sgd = paddle.optimizer.SGD(learning_rate=1e-3, parameters=ptb.parameters())
 
     # load data
@@ -292,7 +297,7 @@ def train(args, to_static=False):
             cost_time.append(cost_t)
             loss.append(out_loss)
 
-            if batch_id % PRINT_STEP == 0:
+            if batch_id % args.log_internal == 0:
                 print(
                     'ToStatic = %s, pass = %d, Iter %d, Loss = %0.3f, Elapse(ms) = %f\n'
                     % (to_static, pass_id, batch_id, out_loss, cost_t))
@@ -301,7 +306,6 @@ def train(args, to_static=False):
               (to_static, pass_id, np.mean(loss), np.mean(cost_time)))
 
     ret = out_loss, last_hidden.numpy(), last_cell.numpy()
-    #paddle.enable_static()
     return ret
 
 

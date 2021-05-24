@@ -20,7 +20,7 @@ import paddle.fluid as fluid
 from paddle.fluid.initializer import MSRA
 from paddle.fluid.param_attr import ParamAttr
 from paddle.fluid.dygraph.nn import Conv2D, Pool2D, BatchNorm, Linear
-from paddle.jit import to_static, ProgramTranslator
+from paddle.jit import ProgramTranslator
 
 # Note: Set True to eliminate randomness.
 #     1. For one operation, cuDNN has several algorithms,
@@ -231,7 +231,6 @@ class MobileNetV1(fluid.dygraph.Layer):
                 initializer=MSRA(), name=self.full_name() + "fc7_weights"),
             bias_attr=ParamAttr(name=self.full_name() + "fc7_offset"))
 
-    @to_static
     def forward(self, inputs):
         y = self.conv1(inputs)
         for dws in self.dwsl:
@@ -385,7 +384,6 @@ class MobileNetV2(fluid.dygraph.Layer):
             param_attr=tmp_param,
             bias_attr=ParamAttr(name=self.full_name() + "fc10_offset"))
 
-    @to_static
     def forward(self, inputs):
         y = self._conv1(inputs, if_act=True)
         for inv in self._invl:
@@ -405,22 +403,6 @@ def create_optimizer(args, parameter_list):
         parameter_list=parameter_list)
 
     return optimizer
-
-
-def fake_data_reader(batch_size, label_size):
-    local_random = np.random.RandomState(SEED)
-
-    def reader():
-        batch_data = []
-        while True:
-            img = local_random.random_sample([3, 224, 224]).astype('float32')
-            label = local_random.randint(0, label_size, [1]).astype('int64')
-            batch_data.append([img, label])
-            if len(batch_data) == batch_size:
-                yield batch_data
-                batch_data = []
-
-    return reader
 
 
 def parse_args():
@@ -499,6 +481,9 @@ def train(args, to_static):
         print("wrong model name, please try model = v1 or v2")
         exit()
 
+    if to_static:
+        net = paddle.jit.to_static(net)
+
     optimizer = create_optimizer(args=args, parameter_list=net.parameters())
     place = paddle.CUDAPlace(0)
 
@@ -555,7 +540,7 @@ def train(args, to_static):
                     ( to_static, pass_id, batch_id, total_loss.numpy()[0] / total_sample, \
                         total_acc1.numpy()[0] / total_sample, total_acc5.numpy()[0] / total_sample, cost_time / args.log_internal))
                 # reset cost_time
-            cost_time = 0.
+                cost_time = 0.
 
     return total_loss.numpy()
 
