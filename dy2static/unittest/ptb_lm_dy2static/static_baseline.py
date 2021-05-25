@@ -116,12 +116,13 @@ def train(args):
 
             # print log
             if step_id % args.log_internal == 0:
+                ips = args.batch_size * args.log_internal / cost_time * 1000
                 print(
-                    'Static Baseline: pass = %d, Iter %d, Loss = %0.3f, Elapse(ms) = %.3f\n'
-                    % (epoch_id, step_id, loss, cost_time / args.log_internal))
+                    'Static Baseline: pass = %d, Iter %d, Loss = %0.3f, Elapse(ms) = %.3f, ips = %.3f seq/s\n'
+                    % (epoch_id, step_id, loss, cost_time / args.log_internal, ips))
                 # reset cost_time
                 cost_time = 0.
-            if step_id == 300:
+            if step_id / args.log_internal > 10:
                 break
 
 if __name__ == '__main__':

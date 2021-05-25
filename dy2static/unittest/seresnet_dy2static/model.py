@@ -421,12 +421,13 @@ def train(args, to_static):
 
             # print log
             if step_id % args.log_internal == 0:
-                print( "ToStatic = {},\tPass = {},\tIter = {},\tLoss = {:.3f},\tAcc1 = {:.3f},\tAcc5 = {:.3f},\tElapse(ms) = {:.3f}\n".format
+                ips = args.batch_size * args.log_internal / cost_time * 1000
+                print( "ToStatic = {},\tPass = {},\tIter = {},\tLoss = {:.3f},\tAcc1 = {:.3f},\tAcc5 = {:.3f},\tElapse(ms) = {:.3f},\tips = {:.3f} img/s\n".format
                     ( to_static, epoch_id, step_id, total_loss / total_sample, \
-                        total_acc1 / total_sample, total_acc5 / total_sample, cost_time / args.log_internal))
+                        total_acc1 / total_sample, total_acc5 / total_sample, cost_time / args.log_internal, ips))
                 # reset cost_time
                 cost_time = 0.
-            if step_id == 300:
+            if step_id / args.log_internal > 10:
                 break
 
 

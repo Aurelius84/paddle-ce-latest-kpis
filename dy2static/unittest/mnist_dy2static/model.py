@@ -211,13 +211,8 @@ def train(args, to_static=False):
 
             if batch_id % args.log_internal == 0:
                 print(
-                    "ToStatic = %s, Pass = %d, Iter = %d, Loss = %f, Accuracy = %f, Elapse(ms) = %f\n"
-                    % (to_static, pass_id, batch_id, avg_loss, acc, np.mean(cost_time)))
-        # print log from each pass_id
-        print(
-            "to_static=%s, pass=%d, train_avg_acc=%f, train_avg_loss=%f, elapse(ms)=%f"
-            % (to_static, pass_id, np.mean(accuracy), np.mean(loss),
-               np.mean(cost_time)))
+                    "ToStatic = %s, Pass = %d, Iter = %d, Loss = %f, Accuracy = %f, Elapse(ms) = %f, ips: %.3f img/s\n"
+                    % (to_static, pass_id, batch_id, avg_loss, acc, np.mean(cost_time), args.batch_size / np.mean(cost_time) * 1000))
 
 
 def run_benchmark(args):

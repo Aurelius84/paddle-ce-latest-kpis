@@ -274,9 +274,15 @@ class PretrainingDataset(Dataset):
         # masked_lm_labels[masked_lm_positions[:index]] = masked_lm_ids[:index]
         masked_lm_labels = masked_lm_ids[:index]
         masked_lm_positions = masked_lm_positions[:index]
+
+        # (Aurelius84): padding data
+        masked_lm_positions = np.append(masked_lm_positions, [masked_lm_positions[-1]]*(19-len(masked_lm_positions)))
+        masked_lm_labels = np.append(masked_lm_labels, [masked_lm_labels[-1]]*(19-len(masked_lm_labels)))
+
         # softmax_with_cross_entropy enforce last dim size equal 1
         masked_lm_labels = np.expand_dims(masked_lm_labels, axis=-1)
         next_sentence_labels = np.expand_dims(next_sentence_labels, axis=-1)
+        
 
         return [
             input_ids, segment_ids, input_mask, masked_lm_positions,
@@ -310,12 +316,18 @@ def do_train(args):
         getattr(model, model_class.base_model_prefix).config["vocab_size"])
     logger.info("args.to_static: %s" % args.to_static)
     if args.to_static:
-        model = paddle.jit.to_static(model)
+        # input_specs = [
+        #     paddle.static.InputSpec([16, 128], 'int32'),
+        #     paddle.static.InputSpec([16, 128], 'int32'),
+        #     paddle.static.InputSpec([16, 1, 1, 128], 'int32'),
+        #     paddle.static.InputSpec([None], 'int32'),
+        # ]
+        model = paddle.jit.to_static(model)# input_spec=input_specs)
         logger.info(("to_static is true"))
     if paddle.distributed.get_world_size() > 1:
         model = paddle.DataParallel(model)
 
-    # If use defalut last_epoch, lr of the first iteration is 0.
+    # If use default last_epoch, lr of the first iteration is 0.
     # Use `last_epoch = 0` to be consistent with nv bert.
     num_training_steps = args.max_steps if args.max_steps > 0 else len(
         train_data_loader) * args.num_train_epochs
@@ -410,6 +422,8 @@ def do_train(args):
                 masked_lm_labels = paddle.to_tensor(masked_lm_labels, place=place)
                 next_sentence_labels = paddle.to_tensor(next_sentence_labels, place=place)
                 masked_lm_scale = paddle.to_tensor(masked_lm_scale, place=place)
+                # print(input_ids.shape, segment_ids.shape, input_mask.shape, masked_lm_positions.shape)
+                # print(model.forward.get_traced_count())
 
                 with paddle.amp.auto_cast(
                         args.use_amp,
@@ -435,9 +449,9 @@ def do_train(args):
                 if global_step % args.logging_steps == 0:
                     if paddle.distributed.get_rank() == 0:
                         logger.info(
-                            "global step: %d, epoch: %d, batch: %d, loss: %f, "
+                            "ToStatic: %s, global step: %d, epoch: %d, batch: %d, loss: %f, "
                             "avg_reader_cost: %.5f sec, avg_batch_cost: %.5f sec, avg_samples: %.5f, ips: %.5f sequences/sec"
-                            % (global_step, epoch, step, loss,
+                            % ('True' if args.to_static else "False", global_step, epoch, step, loss,
                                train_reader_cost / args.logging_steps,
                                (train_reader_cost + train_run_cost) /
                                args.logging_steps, total_samples /

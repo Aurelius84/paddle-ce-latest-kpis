@@ -536,9 +536,10 @@ def train(args, to_static):
             total_sample += 1
 
             if batch_id % args.log_internal == 0:
-                print( "ToStatic = {},\tPass = {},\tIter = {},\tLoss = {:.3f},\tAcc1 = {:.3f},\tAcc5 = {:.3f},\tElapse(ms) = {:.3f}".format
+                ips = args.batch_size * args.log_internal / cost_time * 1000
+                print( "ToStatic = {},\tPass = {},\tIter = {},\tLoss = {:.3f},\tAcc1 = {:.3f},\tAcc5 = {:.3f},\tElapse(ms) = {:.3f},\tips: {:.3f} img/s".format
                     ( to_static, pass_id, batch_id, total_loss.numpy()[0] / total_sample, \
-                        total_acc1.numpy()[0] / total_sample, total_acc5.numpy()[0] / total_sample, cost_time / args.log_internal))
+                        total_acc1.numpy()[0] / total_sample, total_acc5.numpy()[0] / total_sample, cost_time / args.log_internal, ips))
                 # reset cost_time
                 cost_time = 0.
 

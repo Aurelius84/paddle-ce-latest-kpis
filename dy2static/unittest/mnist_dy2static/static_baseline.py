@@ -52,8 +52,8 @@ def train(model, args):
 
             if batch_id % args.log_internal == 0:
                 print(
-                    "StaticBaseline: Pass = %d, Iter = %d, Loss = %.3f, Accuracy = %.3f, Elapse(ms) = %.3f\n"
-                    % (pass_id, batch_id, loss[0], acc1[0], np.mean(cost_time)))
+                    "StaticBaseline: Pass = %d, Iter = %d, Loss = %.3f, Accuracy = %.3f, Elapse(ms) = %.3f, ips: %.3f img/s\n"
+                    % (pass_id, batch_id, loss[0], acc1[0], np.mean(cost_time), args.batch_size/np.mean(cost_time) * 1000))
                 cost_time = []
 
 if __name__ == '__main__':

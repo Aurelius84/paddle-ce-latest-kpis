@@ -74,9 +74,10 @@ def train(model, args):
             total_sample += 1
 
             if batch_id % args.log_internal == 0:
-                print( "Static Baseline: \tPass = {},\tIter = {},\tLoss = {:.3f},\tAcc1 = {:.3f},\tAcc5 = {:.3f},\tElapse(ms) = {:.3f}\n".format
+                ips = args.batch_size * args.log_internal / cost_time * 1000
+                print( "Static Baseline: \tPass = {},\tIter = {},\tLoss = {:.3f},\tAcc1 = {:.3f},\tAcc5 = {:.3f},\tElapse(ms) = {:.3f},\tips = {:.3f} img/s\n".format
                     ( pass_id, batch_id, total_loss / total_sample, \
-                        total_acc1 / total_sample, total_acc5 / total_sample, cost_time / args.log_internal))
+                        total_acc1 / total_sample, total_acc5 / total_sample, cost_time / args.log_internal, ips))
                 # reset cost_time
                 cost_time = 0.
             if batch_id == 300:

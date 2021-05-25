@@ -261,7 +261,7 @@ def train(args, to_static=False):
 
     for pass_id in range(args.pass_num):
         # core indicators
-        cost_time = []
+        cost_time = 0.
         loss = []
         init_hidden_data = np.zeros(
             (num_layers, args.batch_size, hidden_size), dtype='float32')
@@ -276,7 +276,6 @@ def train(args, to_static=False):
             batch_start = time.time()
             x_data = data[0]
             y_data = data[1]
-            y_data = y_data.reshape((-1, 1))
 
             x_data = x_data.reshape((-1, num_steps, 1))
             y_data = y_data.reshape((-1, num_steps, 1))
@@ -294,16 +293,17 @@ def train(args, to_static=False):
 
             batch_end = time.time()
             cost_t = (batch_end - batch_start) * 1000  # ms
-            cost_time.append(cost_t)
+            cost_time += cost_t
             loss.append(out_loss)
 
             if batch_id % args.log_internal == 0:
+                ips = args.batch_size * args.log_internal / cost_time * 1000
                 print(
-                    'ToStatic = %s, pass = %d, Iter %d, Loss = %0.3f, Elapse(ms) = %f\n'
-                    % (to_static, pass_id, batch_id, out_loss, cost_t))
-        # print log from each pass_id
-        print('to_static = %s, pass = %d, Loss = %0.3f, Elapse(ms) = %f' %
-              (to_static, pass_id, np.mean(loss), np.mean(cost_time)))
+                    'ToStatic = %s, pass = %d, Iter %d, Loss = %0.3f, Elapse(ms) = %f, ips = %0.3f seq/s\n'
+                    % (to_static, pass_id, batch_id, out_loss, cost_time / args.log_internal, ips))
+                cost_time = 0.
+            if batch_id / args.log_internal > 15:
+                break
 
     ret = out_loss, last_hidden.numpy(), last_cell.numpy()
     return ret
