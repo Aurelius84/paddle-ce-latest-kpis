@@ -271,7 +271,6 @@ def train(args, to_static):
         total_acc5 = 0.0
         total_sample = 0
         cost_time = 0.
-
         for batch_id, data in enumerate(data_loader()):
             start_time = time.time()
             img, label = data
@@ -306,7 +305,7 @@ def train(args, to_static):
                         total_acc1.numpy()[0] / total_sample, total_acc5.numpy()[0] / total_sample, cost_time / args.log_internal, ips))
                 # reset cost_time
                 cost_time = 0.
-            if batch_id == 300:
+            if batch_id / args.log_internal > 10:
                 break
 
     return total_loss.numpy()
