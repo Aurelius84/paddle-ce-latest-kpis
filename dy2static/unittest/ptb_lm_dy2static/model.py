@@ -257,7 +257,7 @@ def train(args, to_static=False):
     ptb_data = getdata.get_ptb_data(args.batch_size, num_steps)
     print("finished load data")
 
-    place = paddle.CUDAPlace(0)
+    place = paddle.CUDAPlace(0) if args.device == 'GPU' else paddle.CPUPlace()
 
     for pass_id in range(args.pass_num):
         # core indicators
@@ -312,7 +312,7 @@ def train(args, to_static=False):
 def run_benchmark(args):
     # train in dygraph mode
     print('dygraph mode')
-    train(args, to_static=False)
+    #train(args, to_static=False)
 
     print('static mode')
     # train in static mode

@@ -80,7 +80,7 @@ def train(model, args):
                         total_acc1 / total_sample, total_acc5 / total_sample, cost_time / args.log_internal, ips))
                 # reset cost_time
                 cost_time = 0.
-            if batch_id == 300:
+            if batch_id / args.log_internal > 10:
                 break
 
 if __name__ == '__main__':
